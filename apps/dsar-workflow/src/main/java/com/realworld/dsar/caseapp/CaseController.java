@@ -1,6 +1,8 @@
 package com.realworld.dsar.caseapp;
 
 import org.springframework.web.bind.annotation.*;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -15,8 +17,10 @@ public class CaseController {
   }
 
   private static CaseResponse toDto(CaseEntity e) {
-    return new CaseResponse(e.getId(), e.getReference(), e.getStatus(),
-      e.getCreatedAt(), e.getDueAt(), e.getVerifyingAt(), e.getDeliveredAt());
+    return new CaseResponse(
+      e.getId(), e.getReference(), e.getStatus(),
+      e.getCreatedAt(), e.getDueAt(), e.getVerifyingAt(), e.getDeliveredAt()
+    );
   }
 
   @GetMapping
@@ -25,6 +29,17 @@ public class CaseController {
     if (status == null || status.isBlank()) return all;
     String s = status.toUpperCase(Locale.ROOT);
     return all.stream().filter(c -> c.status().equals(s)).toList();
+  }
+
+  @GetMapping("/{id}")
+  public CaseResponse get(@PathVariable Long id){
+    var e = repo.findById(id).orElseThrow();
+    return toDto(e);
+  }
+
+  @DeleteMapping("/{id}")
+  public void delete(@PathVariable Long id){
+    repo.deleteById(id);
   }
 
   @GetMapping("/board")
@@ -36,8 +51,9 @@ public class CaseController {
     for (var e : repo.findAll()) {
       out.getOrDefault(e.getStatus(), out.get("NEW")).add(toDto(e));
     }
-    // Sort by due date ascending in each column
-    out.replaceAll((k,v) -> v.stream().sorted(Comparator.comparing(CaseResponse::dueAt)).collect(Collectors.toList()));
+    out.replaceAll((k,v) -> v.stream()
+      .sorted(Comparator.comparing(CaseResponse::dueAt))
+      .collect(Collectors.toList()));
     return out;
   }
 
@@ -45,8 +61,16 @@ public class CaseController {
   public CaseResponse create(@RequestBody(required = false) CreateCaseRequest body) {
     CaseEntity e = new CaseEntity();
     e.setReference(UUID.randomUUID().toString());
-    if (body != null && body.status() != null && !body.status().isBlank()) {
-      e.setStatus(body.status().toUpperCase(Locale.ROOT));
+    if (body != null) {
+      if (body.status() != null && !body.status().isBlank()) {
+        e.setStatus(body.status().toUpperCase(Locale.ROOT));
+      }
+      if (body.dueDays() != null && body.dueDays() > 0) {
+        // override SLA due date
+        Instant created = Instant.now();
+        e.setCreatedAt(created);
+        e.setDueAt(created.plus(body.dueDays(), ChronoUnit.DAYS));
+      }
     }
     e = repo.save(e);
     return toDto(e);
