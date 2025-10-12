@@ -328,3 +328,5 @@ gradle-app.setting
 # End of https://www.toptal.com/developers/gitignore/api/java,node,gradle,intellij,visualstudiocode
 
 apps/incident-register/
+
+apps/incident-register/
