@@ -32,8 +32,12 @@ export default function App() {
 
   useEffect(() => { load(); }, []);
 
-  const createCase = async () => {
-    await fetch('http://localhost:8080/api/cases', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+  const createCase = async (dueDays?: number) => {
+    await fetch('http://localhost:8080/api/cases', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: dueDays ? JSON.stringify({ dueDays }) : '{}'
+    });
     load();
   };
 
@@ -48,6 +52,11 @@ export default function App() {
     load();
   };
 
+  const remove = async (id: number) => {
+    await fetch(`http://localhost:8080/api/cases/${id}`, { method: 'DELETE' });
+    load();
+  };
+
   const daysLeft = (due: string) => {
     const ms = new Date(due).getTime() - Date.now();
     return Math.ceil(ms / (1000*60*60*24));
@@ -56,10 +65,11 @@ export default function App() {
   return (
     <div style={{ padding: 24 }}>
       <h1>DSAR Workflow — Kanban</h1>
-      <div style={{ marginBottom: 12 }}>
-        <button onClick={createCase}>Create Case</button>
-        {loading && <span style={{marginLeft:12}}>Loading…</span>}
-        {err && <span style={{marginLeft:12, color:'crimson'}}>{err}</span>}
+      <div style={{ marginBottom: 12, display:'flex', gap:8 }}>
+        <button onClick={() => createCase()}>Create Case (30d SLA)</button>
+        <button onClick={() => createCase(5)}>Create Case (5d SLA)</button>
+        {loading && <span>Loading…</span>}
+        {err && <span style={{ color:'crimson' }}>{err}</span>}
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16 }}>
@@ -71,7 +81,10 @@ export default function App() {
               const late = left < 0;
               return (
                 <div key={c.id} style={{ background:'#fafafa', border:'1px solid #eee', borderRadius:8, padding:10, marginBottom:8 }}>
-                  <div style={{fontSize:12, opacity:0.7}}>{new Date(c.createdAt).toLocaleString()}</div>
+                  <div style={{display:'flex', justifyContent:'space-between', alignItems:'center'}}>
+                    <div style={{fontSize:12, opacity:0.7}}>{new Date(c.createdAt).toLocaleString()}</div>
+                    <button onClick={() => remove(c.id)} title="Delete" style={{fontSize:12}}>🗑️</button>
+                  </div>
                   <div><code>{c.reference}</code></div>
                   <div style={{fontSize:12}}>
                     SLA: <b style={{color: late ? 'crimson' : undefined}}>
