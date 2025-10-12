@@ -25,9 +25,10 @@ dependencies {
 
     implementation 'org.flywaydb:flyway-core'
     runtimeOnly   'org.postgresql:postgresql'
+    runtimeOnly   'com.h2database:h2'                 // for local H2 runs (dev)
 
     // H2 for local run without Docker
-    implementation 'com.h2database:h2'
+    
 
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'com.h2database:h2'
