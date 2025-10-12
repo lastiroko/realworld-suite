@@ -1,5 +1,8 @@
 package com.realworld.dsar.caseapp;
 
+import com.realworld.dsar.caseapp.audit.AuditRepository;
+import com.realworld.dsar.caseapp.audit.AuditResponse;
+import com.realworld.dsar.caseapp.audit.AuditService;
 import org.springframework.web.bind.annotation.*;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -11,9 +14,11 @@ import java.util.stream.Collectors;
 public class CaseController {
   private final CaseRepository repo;
   private final CaseService service;
+  private final AuditService audit;
+  private final AuditRepository auditRepo;
 
-  public CaseController(CaseRepository repo, CaseService service) {
-    this.repo = repo; this.service = service;
+  public CaseController(CaseRepository repo, CaseService service, AuditService audit, AuditRepository auditRepo) {
+    this.repo = repo; this.service = service; this.audit = audit; this.auditRepo = auditRepo;
   }
 
   private static CaseResponse toDto(CaseEntity e) {
@@ -32,28 +37,27 @@ public class CaseController {
   }
 
   @GetMapping("/{id}")
-  public CaseResponse get(@PathVariable Long id){
-    var e = repo.findById(id).orElseThrow();
-    return toDto(e);
-  }
+  public CaseResponse get(@PathVariable Long id){ return toDto(repo.findById(id).orElseThrow()); }
 
   @DeleteMapping("/{id}")
   public void delete(@PathVariable Long id){
     repo.deleteById(id);
+    audit.log(id, "DELETE", "");
+  }
+
+  @GetMapping("/{id}/audit")
+  public List<AuditResponse> audit(@PathVariable Long id){
+    return auditRepo.findByCaseIdOrderByAtDesc(id).stream()
+      .map(e -> new AuditResponse(e.getId(), e.getAction(), e.getAt(), e.getDetails()))
+      .toList();
   }
 
   @GetMapping("/board")
   public Map<String, List<CaseResponse>> board() {
     Map<String, List<CaseResponse>> out = new LinkedHashMap<>();
-    out.put("NEW", new ArrayList<>());
-    out.put("VERIFYING", new ArrayList<>());
-    out.put("DELIVERED", new ArrayList<>());
-    for (var e : repo.findAll()) {
-      out.getOrDefault(e.getStatus(), out.get("NEW")).add(toDto(e));
-    }
-    out.replaceAll((k,v) -> v.stream()
-      .sorted(Comparator.comparing(CaseResponse::dueAt))
-      .collect(Collectors.toList()));
+    out.put("NEW", new ArrayList<>()); out.put("VERIFYING", new ArrayList<>()); out.put("DELIVERED", new ArrayList<>());
+    for (var e : repo.findAll()) out.getOrDefault(e.getStatus(), out.get("NEW")).add(toDto(e));
+    out.replaceAll((k,v) -> v.stream().sorted(Comparator.comparing(CaseResponse::dueAt)).collect(Collectors.toList()));
     return out;
   }
 
@@ -62,17 +66,15 @@ public class CaseController {
     CaseEntity e = new CaseEntity();
     e.setReference(UUID.randomUUID().toString());
     if (body != null) {
-      if (body.status() != null && !body.status().isBlank()) {
-        e.setStatus(body.status().toUpperCase(Locale.ROOT));
-      }
+      if (body.status() != null && !body.status().isBlank()) e.setStatus(body.status().toUpperCase(Locale.ROOT));
       if (body.dueDays() != null && body.dueDays() > 0) {
-        // override SLA due date
         Instant created = Instant.now();
         e.setCreatedAt(created);
         e.setDueAt(created.plus(body.dueDays(), ChronoUnit.DAYS));
       }
     }
     e = repo.save(e);
+    audit.log(e.getId(), "CREATE", "status=" + e.getStatus() + ", dueAt=" + e.getDueAt());
     return toDto(e);
   }
 

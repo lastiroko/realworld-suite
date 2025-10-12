@@ -1,5 +1,6 @@
 package com.realworld.dsar.caseapp;
 
+import com.realworld.dsar.caseapp.audit.AuditService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.time.Instant;
@@ -9,12 +10,16 @@ import java.util.Set;
 @Service
 public class CaseService {
   private final CaseRepository repo;
-  public CaseService(CaseRepository repo){ this.repo = repo; }
+  private final AuditService audit;
+
+  public CaseService(CaseRepository repo, AuditService audit){
+    this.repo = repo; this.audit = audit;
+  }
 
   private static final Map<String, Set<String>> ALLOWED = Map.of(
     "NEW", Set.of("VERIFYING"),
     "VERIFYING", Set.of("DELIVERED"),
-    "DELIVERED", Set.of() // terminal
+    "DELIVERED", Set.of()
   );
 
   @Transactional
@@ -30,6 +35,8 @@ public class CaseService {
       case "VERIFYING" -> e.setVerifyingAt(now);
       case "DELIVERED" -> e.setDeliveredAt(now);
     }
-    return repo.save(e);
+    var saved = repo.save(e);
+    audit.log(saved.getId(), "TRANSITION", from + "->" + to);
+    return saved;
   }
 }
