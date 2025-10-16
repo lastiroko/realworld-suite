@@ -83,4 +83,39 @@ public class CaseController {
     var saved = service.transition(id, req.to().toUpperCase(Locale.ROOT));
     return toDto(saved);
   }
+  // --- DEV ONLY: seed demo data ---
+  @PostMapping("/dev/seed")
+  public Map<String, Object> seed(@RequestParam(defaultValue = "10") int count) {
+    var rnd = new java.util.Random();
+    int created = 0;
+    for (int i = 0; i < count; i++) {
+      CaseEntity e = new CaseEntity();
+      e.setReference(java.util.UUID.randomUUID().toString());
+
+      // random status distribution
+      String[] statuses = {"NEW", "VERIFYING", "DELIVERED"};
+      String status = statuses[rnd.nextInt(statuses.length)];
+      e.setStatus(status);
+
+      // random SLA between 5 and 40 days from now (some will be overdue by negative)
+      int dueDays = 5 + rnd.nextInt(36); // 5..40
+      var createdAt = java.time.Instant.now().minusSeconds(rnd.nextInt(10) * 24 * 3600L); // up to 10 days in past
+      e.setCreatedAt(createdAt);
+      e.setDueAt(createdAt.plusSeconds(dueDays * 24L * 3600L));
+
+      // stamp milestones if needed
+      if ("VERIFYING".equals(status)) {
+        e.setVerifyingAt(createdAt.plusSeconds(24 * 3600L));
+      } else if ("DELIVERED".equals(status)) {
+        e.setVerifyingAt(createdAt.plusSeconds(24 * 3600L));
+        e.setDeliveredAt(createdAt.plusSeconds(2 * 24 * 3600L));
+      }
+
+      e = repo.save(e);
+      audit.log(e.getId(), "CREATE", "seed=true status=" + status + ", dueAt=" + e.getDueAt());
+      created++;
+    }
+    return java.util.Map.of("created", created);
+  }
+
 }

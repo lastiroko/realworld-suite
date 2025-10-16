@@ -68,6 +68,19 @@ export default function App() {
       <div style={{ marginBottom: 12, display:'flex', gap:8 }}>
         <button onClick={() => createCase()}>Create Case (30d SLA)</button>
         <button onClick={() => createCase(5)}>Create Case (5d SLA)</button>
+<button
+  onClick={async () => {
+    await fetch('http://localhost:8080/api/cases/dev/seed', { method: 'POST' });
+    // reload board after seeding
+    // If your load() is in scope, call it; otherwise you can do a quick refetch:
+    // (Assuming this is inside your component where load() exists)
+    // @ts-ignore
+    load();
+  }}
+>
+  Seed 10 cases
+</button>
+
         {loading && <span>Loading…</span>}
         {err && <span style={{ color:'crimson' }}>{err}</span>}
       </div>
