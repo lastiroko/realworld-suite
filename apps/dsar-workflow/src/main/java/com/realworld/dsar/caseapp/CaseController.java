@@ -11,6 +11,9 @@ import java.util.stream.Collectors;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
+import jakarta.servlet.http.HttpServletResponse;
+import java.nio.charset.StandardCharsets;
+
 
 @RestController
 @RequestMapping("/api/cases")
@@ -31,6 +34,57 @@ public class CaseController {
       e.getOwner(), e.getSummary()
     );
   }
+private static String csvCell(String s) {
+  if (s == null) return "\"\"";
+  String t = s.replace("\"", "\"\"");
+  return "\"" + t + "\"";
+}
+
+@GetMapping(value="/export", produces="text/csv")
+public void exportCsv(
+    @RequestParam(required=false) String q,
+    @RequestParam(required=false) String status,
+    @RequestParam(defaultValue="dueAt,asc") String sort,
+    HttpServletResponse resp
+) throws java.io.IOException {
+  // sort parse/whitelist
+  java.util.Set<String> allowed = java.util.Set.of("createdAt","updatedAt","dueAt","status");
+  String[] parts = sort.split(",", 2);
+  String field = parts[0];
+  String dir = (parts.length > 1 ? parts[1] : "asc").toLowerCase();
+  if (!allowed.contains(field)) field = "dueAt";
+  org.springframework.data.domain.Sort.Direction direction =
+      "desc".equals(dir) ? org.springframework.data.domain.Sort.Direction.DESC : org.springframework.data.domain.Sort.Direction.ASC;
+  var sortObj = org.springframework.data.domain.Sort.by(direction, field);
+
+  // query
+  var data = repo.searchAll(
+      (status == null || status.isBlank()) ? null : status,
+      (q == null || q.isBlank()) ? null : q,
+      sortObj
+  );
+
+  // headers
+  resp.setCharacterEncoding(StandardCharsets.UTF_8.name());
+  resp.setContentType("text/csv");
+  resp.setHeader("Content-Disposition", "attachment; filename=\"cases.csv\"");
+
+  // write CSV
+  try (var w = resp.getWriter()) {
+    w.println("id,reference,status,createdAt,dueAt,owner,summary");
+    for (var e : data) {
+      w.println(
+          e.getId() + "," +
+          csvCell(e.getReference()) + "," +
+          csvCell(e.getStatus()) + "," +
+          csvCell(String.valueOf(e.getCreatedAt())) + "," +
+          csvCell(String.valueOf(e.getDueAt())) + "," +
+          csvCell(e.getOwner()) + "," +
+          csvCell(e.getSummary())
+      );
+    }
+  }
+}
 
  @GetMapping("/page")
 public Map<String, Object> page(

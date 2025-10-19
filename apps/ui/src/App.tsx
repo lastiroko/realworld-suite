@@ -153,6 +153,16 @@ function TableView() {
       <h2>Cases (Table)</h2>
       <div style={{display:'flex', gap:8, marginBottom:8}}>
         <input placeholder="Search reference/owner/summary…" value={q} onChange={e=>setQ(e.target.value)} style={{flex:1}} />
+	<button
+  	onClick={() => {
+    	const params = new URLSearchParams({ q, status, sort });
+    	// same filters as the table → triggers a download
+    	window.open('http://localhost:8080/api/cases/export?' + params.toString(), '_blank');
+ 	 }}
+	>
+  	Export CSV
+	</button>
+
         <select value={status} onChange={e=>setStatus(e.target.value)}>
           <option value="">All</option>
           <option>NEW</option><option>VERIFYING</option><option>DELIVERED</option>
