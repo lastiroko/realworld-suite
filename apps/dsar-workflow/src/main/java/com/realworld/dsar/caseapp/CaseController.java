@@ -21,12 +21,14 @@ public class CaseController {
     this.repo = repo; this.service = service; this.audit = audit; this.auditRepo = auditRepo;
   }
 
-  private static CaseResponse toDto(CaseEntity e) {
+   private static CaseResponse toDto(CaseEntity e) {
     return new CaseResponse(
       e.getId(), e.getReference(), e.getStatus(),
-      e.getCreatedAt(), e.getDueAt(), e.getVerifyingAt(), e.getDeliveredAt()
+      e.getCreatedAt(), e.getDueAt(), e.getVerifyingAt(), e.getDeliveredAt(),
+      e.getOwner(), e.getSummary()
     );
   }
+
 
   @GetMapping
   public List<CaseResponse> list(@RequestParam(required=false) String status) {
@@ -83,6 +85,16 @@ public class CaseController {
     var saved = service.transition(id, req.to().toUpperCase(Locale.ROOT));
     return toDto(saved);
   }
+
+  @PatchMapping("/{id}")
+  public CaseResponse update(@PathVariable Long id, @RequestBody UpdateCaseRequest body) {
+    var e = repo.findById(id).orElseThrow();
+    if (body.owner() != null)   e.setOwner(body.owner());
+    if (body.summary() != null) e.setSummary(body.summary());
+    e = repo.save(e);
+    return toDto(e);
+  }
+
   // --- DEV ONLY: seed demo data ---
   @PostMapping("/dev/seed")
   public Map<String, Object> seed(@RequestParam(defaultValue = "10") int count) {

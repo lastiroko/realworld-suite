@@ -32,7 +32,15 @@ public class CaseEntity {
 
   @Column(name = "delivered_at")
   private Instant deliveredAt;
+  
+  @Column(length = 64)  private String owner;   // optional
+  @Column(length = 200) private String summary; // optional
 
+  public String getOwner() { return owner; }
+  public void setOwner(String owner) { this.owner = owner; }
+  public String getSummary() { return summary; }
+  public void setSummary(String summary) { this.summary = summary; }
+ 
   @PrePersist
   void prePersist() {
     Instant now = Instant.now();
