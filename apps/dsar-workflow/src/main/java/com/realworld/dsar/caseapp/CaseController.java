@@ -8,6 +8,9 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.stream.Collectors;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 
 @RestController
 @RequestMapping("/api/cases")
@@ -29,6 +32,35 @@ public class CaseController {
     );
   }
 
+ @GetMapping("/page")
+public Map<String, Object> page(
+    @RequestParam(required = false) String q,
+    @RequestParam(required = false) String status,
+    @RequestParam(defaultValue = "0") int page,
+    @RequestParam(defaultValue = "10") int size,
+    @RequestParam(defaultValue = "dueAt,asc") String sort // e.g., createdAt,desc
+) {
+  // whitelist sort fields
+  Set<String> allowed = Set.of("createdAt","updatedAt","dueAt","status");
+  String[] parts = sort.split(",", 2);
+  String field = parts[0];
+  String dir = (parts.length > 1 ? parts[1] : "asc").toLowerCase();
+  if (!allowed.contains(field)) field = "dueAt";
+  Sort.Direction direction = "desc".equals(dir) ? Sort.Direction.DESC : Sort.Direction.ASC;
+
+  PageRequest pr = PageRequest.of(page, size, Sort.by(direction, field));
+  Page<CaseEntity> p = repo.search(status, (q == null || q.isBlank()) ? null : q, pr);
+
+  List<CaseResponse> content = p.getContent().stream().map(CaseController::toDto).toList();
+  return Map.of(
+      "content", content,
+      "page", p.getNumber(),
+      "size", p.getSize(),
+      "totalElements", p.getTotalElements(),
+      "totalPages", p.getTotalPages(),
+      "sort", field + "," + direction.name().toLowerCase()
+  );
+}
 
   @GetMapping
   public List<CaseResponse> list(@RequestParam(required=false) String status) {
