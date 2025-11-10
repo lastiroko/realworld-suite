@@ -326,4 +326,9 @@ gradle-app.setting
 *.hprof
 
 # End of https://www.toptal.com/developers/gitignore/api/java,node,gradle,intellij,visualstudiocode
+<<<<<<< HEAD
+apps/incident-register/
+=======
 kopieren/
+>>>>>>> origin/main
+.idea/

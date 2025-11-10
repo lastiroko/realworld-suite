@@ -197,14 +197,16 @@ export default function App() {
   return (
     <div className="app-shell">
       <div className="workspace-nav">
-        <div className="workspace-nav__brand">
-          <span className="workspace-nav__glyph" aria-hidden="true" />
-          <span className="workspace-nav__logo">sandbox</span>
+        <div className="workspace-nav__brand" aria-label="Acureq AI workspace">
+          <span className="workspace-nav__glyph" aria-hidden="true">
+            AI
+          </span>
+          <span className="workspace-nav__logo">Acureq</span>
         </div>
         <div className="workspace-nav__actions">
           <div className="workspace-nav__summary">
             <span className="workspace-nav__label">Workspace</span>
-            <span className="workspace-nav__name">Privacy Desk</span>
+            <span className="workspace-nav__name">Acureq Desk</span>
           </div>
           <button
             className="icon-button"
@@ -216,7 +218,7 @@ export default function App() {
             {loading === 'loading' ? '…' : '⟳'}
           </button>
           <div className="workspace-nav__avatar" aria-hidden="true">
-            PD
+            AQ
           </div>
         </div>
       </div>
@@ -224,14 +226,14 @@ export default function App() {
       <header className="page-header">
         <div className="page-header__banner">
           <div>
-            <strong>Get the full CodeSandbox experience</strong>
-            <span>Unlock more sandboxes, runtime hours, and collaborators.</span>
+            <strong>Accelerate your privacy ops with Acureq AI</strong>
+            <span>Unlock deeper insights, automated triage, and collaborative resolution flows.</span>
           </div>
-          <button className="outline" type="button">Upgrade</button>
+          <button className="outline" type="button">Explore plans</button>
         </div>
         <div className="page-header__content">
           <div>
-            <span className="eyebrow">Sandbox Privacy Desk</span>
+            <span className="eyebrow">Acureq Privacy Desk</span>
             <h1>DSAR Workflow Command Center</h1>
             <p className="subtitle">Monitor, triage, and resolve privacy requests with confidence.</p>
           </div>
