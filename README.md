@@ -17,18 +17,12 @@ The DSAR workflow implementation is feature-complete relative to the requirement
 
 ### Backend
 
-The Spring Boot service now defaults to an in-memory H2 database, so you can launch the API locally without provisioning Postgres. Gradle still needs network access the first time it resolves plugins and dependencies.
+The backend uses Gradle with the Spring Boot plugin. In network-restricted environments the Gradle wrapper cannot download the plugin distribution; run builds with an existing Gradle installation that already has the Spring Boot plugin cached, or configure an internal mirror.
 
 ```bash
 cd apps/dsar-workflow
-./gradlew bootRun   # starts the API against the in-memory H2 database
-./gradlew test      # executes the integration test suite
-```
-
-To point the service at a real Postgres instance instead, activate the `postgres` Spring profile:
-
-```bash
-./gradlew bootRun --args='--spring.profiles.active=postgres'
+# Requires network access to download Gradle plugins and dependencies on the first run
+./gradlew test
 ```
 
 ### Frontend
