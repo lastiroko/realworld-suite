@@ -1,7 +1,7 @@
 # Fly.io configuration for dsar-workflow.
 # See: https://fly.io/docs/reference/configuration/
 
-app = "dsar-workflow"
+app = "dsar-workflow-acureq"
 primary_region = "lhr"
 
 [build]
