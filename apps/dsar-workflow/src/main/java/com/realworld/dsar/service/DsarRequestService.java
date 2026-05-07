@@ -3,12 +3,15 @@ package com.realworld.dsar.service;
 import com.realworld.dsar.domain.DsarRequest;
 import com.realworld.dsar.domain.DsarRequestNote;
 import com.realworld.dsar.domain.RequestStatus;
+import com.realworld.dsar.domain.StatusHistoryEvent;
 import com.realworld.dsar.repository.DsarRequestNoteRepository;
 import com.realworld.dsar.repository.DsarRequestRepository;
+import com.realworld.dsar.repository.StatusHistoryRepository;
 import jakarta.persistence.EntityNotFoundException;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,13 +20,16 @@ public class DsarRequestService {
 
     private final DsarRequestRepository requestRepository;
     private final DsarRequestNoteRepository noteRepository;
+    private final StatusHistoryRepository historyRepository;
 
     public DsarRequestService(
         DsarRequestRepository requestRepository,
-        DsarRequestNoteRepository noteRepository
+        DsarRequestNoteRepository noteRepository,
+        StatusHistoryRepository historyRepository
     ) {
         this.requestRepository = requestRepository;
         this.noteRepository = noteRepository;
+        this.historyRepository = historyRepository;
     }
 
     @Transactional(readOnly = true)
@@ -34,7 +40,14 @@ public class DsarRequestService {
 
     @Transactional
     public DsarRequest save(DsarRequest request) {
-        return requestRepository.save(request);
+        boolean isNew = request.getId() == null;
+        DsarRequest saved = requestRepository.save(request);
+        if (isNew) {
+            historyRepository.save(StatusHistoryEvent.of(
+                saved.getId(), null, saved.getStatus(), "Request created", "system"
+            ));
+        }
+        return saved;
     }
 
     @Transactional
@@ -43,6 +56,7 @@ public class DsarRequestService {
         if (entity.getStatus() == RequestStatus.COMPLETED || entity.getStatus() == RequestStatus.REJECTED) {
             throw new IllegalStateException("Resolved requests cannot transition to another status");
         }
+        RequestStatus previous = entity.getStatus();
         entity.setStatus(newStatus);
         if (noteContent != null && !noteContent.isBlank()) {
             DsarRequestNote note = new DsarRequestNote();
@@ -50,7 +64,11 @@ public class DsarRequestService {
             note.setContent(noteContent);
             entity.addNote(note);
         }
-        return requestRepository.save(entity);
+        DsarRequest saved = requestRepository.save(entity);
+        historyRepository.save(StatusHistoryEvent.of(
+            saved.getId(), previous, newStatus, noteContent, "operator"
+        ));
+        return saved;
     }
 
     @Transactional(readOnly = true)
@@ -71,8 +89,20 @@ public class DsarRequestService {
 
     @Transactional(readOnly = true)
     public List<DsarRequestNote> getNotes(Long requestId) {
-        getById(requestId); // ensure exists
+        getById(requestId);
         return noteRepository.findAllByRequestIdOrderByCreatedAtAsc(requestId);
+    }
+
+    @Transactional(readOnly = true)
+    public List<StatusHistoryEvent> getHistory(Long requestId) {
+        getById(requestId);
+        return historyRepository.findAllByRequestIdOrderByCreatedAtAsc(requestId);
+    }
+
+    @Transactional(readOnly = true)
+    public List<StatusHistoryEvent> getRecentHistory(int limit) {
+        int safe = Math.min(Math.max(limit, 1), 100);
+        return historyRepository.findAllByOrderByCreatedAtDesc(PageRequest.of(0, safe));
     }
 
     @Transactional(readOnly = true)

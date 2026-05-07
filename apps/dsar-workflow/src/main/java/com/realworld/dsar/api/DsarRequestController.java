@@ -5,6 +5,7 @@ import com.realworld.dsar.api.dto.CreateDsarRequestRequest;
 import com.realworld.dsar.api.dto.DsarRequestNoteResponse;
 import com.realworld.dsar.api.dto.DsarRequestResponse;
 import com.realworld.dsar.api.dto.RequestSummaryResponse;
+import com.realworld.dsar.api.dto.StatusHistoryResponse;
 import com.realworld.dsar.api.dto.UpdateDsarRequestRequest;
 import com.realworld.dsar.api.dto.UpdateStatusRequest;
 import com.realworld.dsar.domain.DsarRequest;
@@ -103,6 +104,22 @@ public class DsarRequestController {
     public RequestSummaryResponse summarizeByStatus() {
         Map<RequestStatus, Long> summary = requestService.summarizeByStatus();
         return new RequestSummaryResponse(summary);
+    }
+
+    @GetMapping("/{id}/history")
+    public List<StatusHistoryResponse> history(@PathVariable Long id) {
+        return requestService.getHistory(id).stream()
+            .map(DsarRequestMapper::toResponse)
+            .toList();
+    }
+
+    @GetMapping("/history/recent")
+    public List<StatusHistoryResponse> recentHistory(
+        @RequestParam(value = "limit", defaultValue = "30") int limit
+    ) {
+        return requestService.getRecentHistory(limit).stream()
+            .map(DsarRequestMapper::toResponse)
+            .toList();
     }
 
     @ExceptionHandler(EntityNotFoundException.class)

@@ -4,9 +4,11 @@ import com.realworld.dsar.api.dto.AddNoteRequest;
 import com.realworld.dsar.api.dto.CreateDsarRequestRequest;
 import com.realworld.dsar.api.dto.DsarRequestNoteResponse;
 import com.realworld.dsar.api.dto.DsarRequestResponse;
+import com.realworld.dsar.api.dto.StatusHistoryResponse;
 import com.realworld.dsar.api.dto.UpdateDsarRequestRequest;
 import com.realworld.dsar.domain.DsarRequest;
 import com.realworld.dsar.domain.DsarRequestNote;
+import com.realworld.dsar.domain.StatusHistoryEvent;
 
 public final class DsarRequestMapper {
 
@@ -58,6 +60,18 @@ public final class DsarRequestMapper {
             note.getAuthor(),
             note.getContent(),
             note.getCreatedAt()
+        );
+    }
+
+    public static StatusHistoryResponse toResponse(StatusHistoryEvent event) {
+        return new StatusHistoryResponse(
+            event.getId(),
+            event.getRequestId(),
+            event.getFromStatus(),
+            event.getToStatus(),
+            event.getReason(),
+            event.getActor(),
+            event.getCreatedAt()
         );
     }
 }
