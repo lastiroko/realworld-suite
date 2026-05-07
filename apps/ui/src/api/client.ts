@@ -1,4 +1,7 @@
-const API_BASE = import.meta.env.VITE_API_URL ?? '/api';
+const PROD_API = 'https://dsar-workflow-acureq.fly.dev/api';
+const API_BASE =
+  (import.meta.env.VITE_API_URL && import.meta.env.VITE_API_URL.trim()) ||
+  (import.meta.env.PROD ? PROD_API : '/api');
 
 export class ApiError extends Error {
   status: number;
